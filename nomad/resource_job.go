@@ -590,7 +590,7 @@ func resourceJobCustomizeDiff(_ context.Context, d *schema.ResourceDiff, meta in
 	providerConfig := meta.(ProviderConfig)
 	client := providerConfig.client
 
-	if !d.NewValueKnown("jobspec") {
+	if !d.GetRawConfig().IsWhollyKnown() {
 		d.SetNewComputed("name")
 		d.SetNewComputed("modify_index")
 		d.SetNewComputed("namespace")
