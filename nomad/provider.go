@@ -198,6 +198,10 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 	conf.Address = d.Get("address").(string)
 	conf.SecretID = d.Get("secret_id").(string)
 
+	if conf.SecretID == "" {
+		conf.SecretID = os.Getenv("NOMAD_TOKEN")
+	}
+
 	if region, ok := d.GetOk("region"); ok {
 		conf.Region = region.(string)
 	} else if ignore, ok := ignoreEnvVars["NOMAD_REGION"]; ok && ignore.(bool) {
