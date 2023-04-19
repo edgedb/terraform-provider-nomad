@@ -27,7 +27,6 @@ func Provider() *schema.Provider {
 			"address": {
 				Type:        schema.TypeString,
 				Required:    true,
-				DefaultFunc: schema.EnvDefaultFunc("NOMAD_ADDR", nil),
 				Description: "URL of the root of the target Nomad agent.",
 			},
 			"region": {
@@ -38,13 +37,11 @@ func Provider() *schema.Provider {
 			"http_auth": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				DefaultFunc: schema.EnvDefaultFunc("NOMAD_HTTP_AUTH", ""),
 				Description: "HTTP basic auth configuration.",
 			},
 			"ca_file": {
 				Type:          schema.TypeString,
 				Optional:      true,
-				DefaultFunc:   schema.EnvDefaultFunc("NOMAD_CACERT", nil),
 				Description:   "A path to a PEM-encoded certificate authority used to verify the remote agent's certificate.",
 				ConflictsWith: []string{"ca_pem"},
 			},
@@ -57,7 +54,6 @@ func Provider() *schema.Provider {
 			"cert_file": {
 				Type:          schema.TypeString,
 				Optional:      true,
-				DefaultFunc:   schema.EnvDefaultFunc("NOMAD_CLIENT_CERT", nil),
 				Description:   "A path to a PEM-encoded certificate provided to the remote agent; requires use of key_file or key_pem.",
 				ConflictsWith: []string{"cert_pem"},
 			},
@@ -70,7 +66,6 @@ func Provider() *schema.Provider {
 			"key_file": {
 				Type:          schema.TypeString,
 				Optional:      true,
-				DefaultFunc:   schema.EnvDefaultFunc("NOMAD_CLIENT_KEY", nil),
 				Description:   "A path to a PEM-encoded private key, required if cert_file or cert_pem is specified.",
 				ConflictsWith: []string{"key_pem"},
 			},
@@ -188,18 +183,32 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		// https://github.com/hashicorp/terraform-plugin-sdk/issues/142
 		if os.Getenv("TFC_RUN_ID") != "" {
 			ignoreEnvVars = map[string]interface{}{
-				"NOMAD_NAMESPACE": true,
-				"NOMAD_REGION":    true,
+				"NOMAD_ADDR":            true,
+				"NOMAD_REGION":          true,
+				"NOMAD_NAMESPACE":       true,
+				"NOMAD_HTTP_AUTH":       true,
+				"NOMAD_CACERT":          true,
+				"NOMAD_CAPATH":          true,
+				"NOMAD_CLIENT_CERT":     true,
+				"NOMAD_CLIENT_KEY":      true,
+				"NOMAD_TLS_SERVER_NAME": true,
+				"NOMAD_SKIP_VERIFY":     true,
+				"NOMAD_TOKEN":           true,
 			}
 		}
 	}
 
 	conf := api.DefaultConfig()
-	conf.Address = d.Get("address").(string)
-	conf.SecretID = d.Get("secret_id").(string)
+	if addr, ok := d.GetOk("address"); ok {
+		conf.Address = addr.(string)
+	} else if ignore, ok := ignoreEnvVars["NOMAD_ADDR"]; ok && ignore.(bool) {
+		conf.Address = ""
+	}
 
-	if conf.SecretID == "" {
-		conf.SecretID = os.Getenv("NOMAD_TOKEN")
+	if token, ok := d.GetOk("secret_id"); ok {
+		conf.SecretID = token.(string)
+	} else if ignore, ok := ignoreEnvVars["NOMAD_TOKEN"]; ok && ignore.(bool) {
+		conf.SecretID = ""
 	}
 
 	if region, ok := d.GetOk("region"); ok {
@@ -228,12 +237,41 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 			username = httpAuth
 		}
 		conf.HttpAuth = &api.HttpBasicAuth{Username: username, Password: password}
+	} else if ignore, ok := ignoreEnvVars["NOMAD_HTTP_AUTH"]; ok && ignore.(bool) {
+		conf.HttpAuth = nil
 	}
 
 	// TLS configuration items.
-	conf.TLSConfig.CACert = d.Get("ca_file").(string)
-	conf.TLSConfig.ClientCert = d.Get("cert_file").(string)
-	conf.TLSConfig.ClientKey = d.Get("key_file").(string)
+	if cert, ok := d.GetOk("ca_file"); ok {
+		conf.TLSConfig.CACert = cert.(string)
+	} else if ignore, ok := ignoreEnvVars["NOMAD_CACERT"]; ok && ignore.(bool) {
+		conf.TLSConfig.CACert = ""
+	}
+
+	if ignore, ok := ignoreEnvVars["NOMAD_CAPATH"]; ok && ignore.(bool) {
+		conf.TLSConfig.CAPath = ""
+	}
+
+	if cert, ok := d.GetOk("cert_file"); ok {
+		conf.TLSConfig.ClientCert = cert.(string)
+	} else if ignore, ok := ignoreEnvVars["NOMAD_CLIENT_CERT"]; ok && ignore.(bool) {
+		conf.TLSConfig.ClientCert = ""
+	}
+
+	if key, ok := d.GetOk("key_file"); ok {
+		conf.TLSConfig.ClientKey = key.(string)
+	} else if ignore, ok := ignoreEnvVars["NOMAD_CLIENT_KEY"]; ok && ignore.(bool) {
+		conf.TLSConfig.ClientKey = ""
+	}
+
+	if ignore, ok := ignoreEnvVars["NOMAD_TLS_SERVER_NAME"]; ok && ignore.(bool) {
+		conf.TLSConfig.TLSServerName = ""
+	}
+
+	if ignore, ok := ignoreEnvVars["NOMAD_SKIP_VERIFY"]; ok && ignore.(bool) {
+		conf.TLSConfig.Insecure = false
+	}
+
 	conf.TLSConfig.CACertPEM = []byte(d.Get("ca_pem").(string))
 	conf.TLSConfig.ClientCertPEM = []byte(d.Get("cert_pem").(string))
 	conf.TLSConfig.ClientKeyPEM = []byte(d.Get("key_pem").(string))
