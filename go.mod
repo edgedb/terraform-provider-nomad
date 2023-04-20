@@ -25,7 +25,6 @@ require (
 	github.com/hashicorp/go-version v1.6.0
 	github.com/hashicorp/nomad v1.5.0
 	github.com/hashicorp/nomad/api v0.0.0-20230302185216-f88e3b012533
-	github.com/hashicorp/terraform-plugin-log v0.3.0
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.14.0
 	github.com/hashicorp/vault v0.10.4
 	github.com/stretchr/testify v1.8.1
@@ -62,6 +61,7 @@ require (
 	github.com/hashicorp/terraform-exec v0.16.1 // indirect
 	github.com/hashicorp/terraform-json v0.13.0 // indirect
 	github.com/hashicorp/terraform-plugin-go v0.9.0 // indirect
+	github.com/hashicorp/terraform-plugin-log v0.3.0 // indirect
 	github.com/hashicorp/terraform-registry-address v0.0.0-20210412075316-9b2996cce896 // indirect
 	github.com/hashicorp/terraform-svchost v0.0.0-20200729002733-f050f53b9734 // indirect
 	github.com/hashicorp/yamux v0.0.0-20211028200310-0bc27b27de87 // indirect
