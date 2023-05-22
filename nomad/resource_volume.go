@@ -67,7 +67,7 @@ func resourceVolume() *schema.Resource {
 			"plugin_id": {
 				ForceNew:    true,
 				Description: "The ID of the CSI plugin that manages this volume.",
-				Required:    true,
+				Optional:    true,
 				Type:        schema.TypeString,
 			},
 
@@ -378,6 +378,11 @@ func resourceVolumeCreate(d *schema.ResourceData, meta interface{}) error {
 		return fmt.Errorf("failed to unpack topology request: %v", err)
 	}
 
+	plugin_id := d.Get("plugin_id").(string)
+	if plugin_id == "" {
+		return fmt.Errorf("'plugin_id' is required but is null or unknown")
+	}
+
 	volume := &api.CSIVolume{
 		ID:                    d.Get("volume_id").(string),
 		Name:                  d.Get("name").(string),
@@ -387,7 +392,7 @@ func resourceVolumeCreate(d *schema.ResourceData, meta interface{}) error {
 		Secrets:               toMapStringString(d.Get("secrets")),
 		Parameters:            toMapStringString(d.Get("parameters")),
 		Context:               toMapStringString(d.Get("context")),
-		PluginID:              d.Get("plugin_id").(string),
+		PluginID:              plugin_id,
 
 		// COMPAT(1.5.0)
 		// Maintain backwards compatibility.
