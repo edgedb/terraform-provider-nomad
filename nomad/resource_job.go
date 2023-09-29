@@ -618,6 +618,11 @@ func resourceJobRead(d *schema.ResourceData, meta interface{}) error {
 		d.Set("allocation_ids", allocIDs)
 	} else {
 		d.Set("allocation_ids", nil)
+		d.Set("read_allocation_ids", false)
+	}
+
+	if !d.Get("hcl1").(bool) {
+		d.Set("hcl1", false)
 	}
 
 	return nil
@@ -871,7 +876,7 @@ func parseHCL2Jobspec(raw string, config HCL2JobParserConfig) (*api.Job, error) 
 
 	return jobspec2.ParseWithConfig(&jobspec2.ParseConfig{
 		Path:    "",
-		Body:    []byte(raw),
+		Body:    []byte(strings.Clone(raw)),
 		AllowFS: config.AllowFS,
 		ArgVars: argVars,
 		Strict:  true,
